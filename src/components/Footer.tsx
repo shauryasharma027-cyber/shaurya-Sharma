@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
-import { ArrowUpRight, Send, CheckCircle2, MapPin, MessageCircle, Phone, Mail } from 'lucide-react';
+import { ArrowUpRight, Send, CheckCircle2, MapPin, MessageCircle, Phone, Mail, Lock } from 'lucide-react';
 import NoveLogo from './NoveLogo';
+import { subscribeNewsletter } from '../lib/supabase';
 
 interface FooterProps {
   onOpenProjectModal: () => void;
+  onOpenAdmin?: () => void;
 }
 
-export default function Footer({ onOpenProjectModal }: FooterProps) {
+export default function Footer({ onOpenProjectModal, onOpenAdmin }: FooterProps) {
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
   const [jaipurTime, setJaipurTime] = useState('');
@@ -39,11 +41,17 @@ export default function Footer({ onOpenProjectModal }: FooterProps) {
     return () => clearInterval(interval);
   }, []);
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
     if (email.trim() && email.includes('@')) {
+      const emailToSubmit = email.trim();
       setSubscribed(true);
       setEmail('');
+      try {
+        await subscribeNewsletter(emailToSubmit);
+      } catch (err) {
+        console.warn('Newsletter sync note:', err);
+      }
       setTimeout(() => setSubscribed(false), 5000);
     }
   };
@@ -178,6 +186,17 @@ export default function Footer({ onOpenProjectModal }: FooterProps) {
           </div>
 
           <div className="flex items-center gap-6 font-semibold">
+            {onOpenAdmin && (
+              <button
+                onClick={onOpenAdmin}
+                className="hover:text-cyan-700 transition-colors flex items-center gap-1.5 text-slate-500 hover:text-slate-800"
+                title="Admin Command Center"
+              >
+                <Lock className="w-3 h-3 text-cyan-600" />
+                <span>Admin Portal</span>
+              </button>
+            )}
+
             <a
               href="https://instagram.com"
               target="_blank"

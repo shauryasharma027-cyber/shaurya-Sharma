@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MessageCircle } from 'lucide-react';
 import CustomCursor from './components/CustomCursor';
 import PageLoader from './components/PageLoader';
@@ -23,15 +23,29 @@ import FinalCtaSection from './components/FinalCtaSection';
 import Footer from './components/Footer';
 import ProjectModal from './components/ProjectModal';
 import CaseStudyModal from './components/CaseStudyModal';
+import AdminPortal from './components/AdminPortal';
 import { FEATURED_CASE_STUDY } from './data/agencyData';
 import { ProjectItem } from './types';
 
 export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [projectModalOpen, setProjectModalOpen] = useState(false);
+  const [adminPortalOpen, setAdminPortalOpen] = useState(false);
   const [preselectedService, setPreselectedService] = useState<string | undefined>(undefined);
   const [preselectedPlan, setPreselectedPlan] = useState<string | undefined>(undefined);
   const [selectedCaseStudy, setSelectedCaseStudy] = useState<ProjectItem | null>(null);
+
+  // Check URL hash or param for direct admin access e.g. #admin
+  useEffect(() => {
+    const checkAdminHash = () => {
+      if (window.location.hash === '#admin' || window.location.search.includes('admin=true')) {
+        setAdminPortalOpen(true);
+      }
+    };
+    checkAdminHash();
+    window.addEventListener('hashchange', checkAdminHash);
+    return () => window.removeEventListener('hashchange', checkAdminHash);
+  }, []);
 
   const handleOpenProjectModal = (service?: string, plan?: string) => {
     setPreselectedService(service);
@@ -119,7 +133,10 @@ export default function App() {
       </main>
 
       {/* Global Agency Footer */}
-      <Footer onOpenProjectModal={() => handleOpenProjectModal()} />
+      <Footer
+        onOpenProjectModal={() => handleOpenProjectModal()}
+        onOpenAdmin={() => setAdminPortalOpen(true)}
+      />
 
       {/* Interactive Project Initiation Brief Modal */}
       <ProjectModal
@@ -134,6 +151,17 @@ export default function App() {
         project={selectedCaseStudy}
         onClose={() => setSelectedCaseStudy(null)}
         onStartSimilarProject={(serviceName) => handleOpenProjectModal(serviceName)}
+      />
+
+      {/* Nove Social 2-Seat Admin Command Center Portal */}
+      <AdminPortal
+        isOpen={adminPortalOpen}
+        onClose={() => {
+          setAdminPortalOpen(false);
+          if (window.location.hash === '#admin') {
+            window.history.replaceState(null, '', window.location.pathname + window.location.search);
+          }
+        }}
       />
 
       {/* Floating WhatsApp Action Widget (9413340605) */}

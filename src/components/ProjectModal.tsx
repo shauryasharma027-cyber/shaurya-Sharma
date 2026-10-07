@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { X, CheckCircle2, ArrowRight, Sparkles, Send } from 'lucide-react';
+import { X, CheckCircle2, ArrowRight, Sparkles, Send, Loader2 } from 'lucide-react';
 import NoveLogo from './NoveLogo';
+import { submitProjectInquiry } from '../lib/supabase';
 
 interface ProjectModalProps {
   isOpen: boolean;
@@ -24,6 +25,8 @@ export default function ProjectModal({
   const [company, setCompany] = useState('');
   const [description, setDescription] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [syncedToSupabase, setSyncedToSupabase] = useState(false);
 
   const availableServices = [
     'Social Media Marketing & Reels',
@@ -66,15 +69,36 @@ export default function ProjectModal({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !email.trim()) return;
 
-    setSubmitted(true);
+    setIsSubmitting(true);
+    try {
+      const res = await submitProjectInquiry({
+        name,
+        email,
+        phone,
+        company,
+        services: selectedServices,
+        budget,
+        timeline,
+        details: description,
+      });
+      if (res.success) {
+        setSyncedToSupabase(true);
+      }
+    } catch (err) {
+      console.error('Lead submission caught error:', err);
+    } finally {
+      setIsSubmitting(false);
+      setSubmitted(true);
+    }
   };
 
   const handleReset = () => {
     setSubmitted(false);
+    setSyncedToSupabase(false);
     onClose();
   };
 
@@ -273,10 +297,20 @@ export default function ProjectModal({
 
                 <button
                   type="submit"
-                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 rounded-full text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 transition-all shadow-lg active:scale-95"
+                  disabled={isSubmitting}
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 rounded-full text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 disabled:opacity-75 transition-all shadow-lg active:scale-95"
                 >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>Transmit Project Brief</span>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-400" />
+                      <span>Syncing to Supabase...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-3.5 h-3.5" />
+                      <span>Transmit Project Brief</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
@@ -301,6 +335,10 @@ export default function ProjectModal({
               <div>Reference Code: <span className="text-cyan-700 font-bold">NOVE-{Math.floor(100000 + Math.random() * 900000)}</span></div>
               <div>Estimated Investment: <span className="text-slate-900 font-bold">{budget}</span></div>
               <div>Priority Status: <span className="text-emerald-700 font-bold">High Priority · Jaipur Inbound Queue</span></div>
+              <div className="pt-1 text-[10px] text-slate-500 flex items-center gap-1.5">
+                <span className={`w-2 h-2 rounded-full ${syncedToSupabase ? 'bg-emerald-500' : 'bg-cyan-500'}`} />
+                <span>Backend: Connected to Supabase ({syncedToSupabase ? 'Synced' : 'Processed'})</span>
+              </div>
             </div>
 
             <button
